@@ -33,7 +33,8 @@
 
 #define IS_FORWARD(c) (c % 2 == 0)
 
-using entry_key_t = int64_t;
+#define KEYLEN 24
+//using entry_key_t = int64_t;
 
 static inline void cpu_pause()
 {
@@ -82,6 +83,81 @@ inline void clflush(char *data, int len)
 
 class page;
 
+class entry_key {
+  private:
+    char key[KEYLEN];
+
+  public:
+    entry_key() {
+      int i;
+      for (i = 0; i < KEYLEN; i++)
+        key[i] = 0xff;
+    }
+    entry_key(const string& str) {
+      int i;
+      int len = str.length();
+      for (i = 0; i < KEYLEN; i++) {
+        if (i < len)
+          key[i] = str[i];
+        else
+          key[i] = 0;
+      }
+
+    }
+
+    entry_key& operator = (const entry_key& obj) {
+      int i;
+      for (i = 0; i < KEYLEN; i++)
+        key[i] = obj.key[i];
+    }
+    entry_key& operator = (const string& str) {
+      int i;
+      int len = str.length();
+      for (i = 0; i < KEYLEN; i++) {
+        if (i < len)
+          key[i] = str[i];
+        else
+          key[i] = 0;
+      }
+    }
+
+    bool operator == (const entry_key& obj) {
+      int i;
+      for (i = 0; i < KEYLEN; i++)
+        if (key[i] != obj.key[i])
+          return false;
+      return true;
+    }
+    bool operator < (const entry_key& obj) {
+      int i;
+      for (i = 0; i < KEYLEN; i++)
+        if (key[i] < obj.key[i])
+          return true;
+      return false;
+    }
+    bool operator <= (const entry_key& obj) {
+      int i;
+      for (i = 0; i < KEYLEN; i++)
+        if (key[i] > obj.key[i])
+          return false;
+      return true;
+    }
+    bool operator > (const entry_key& obj) {
+      int i;
+      for (i = 0; i < KEYLEN; i++)
+        if (key[i] > obj.key[i])
+          return true;
+      return false;
+    }
+    bool operator >= (const entry_key& obj) {
+      int i;
+      for (i = 0; i < KEYLEN; i++)
+        if (key[i] < obj.key[i])
+          return false;
+      return true;
+    }
+};
+
 class btree{
   private:
     int height;
@@ -90,13 +166,13 @@ class btree{
   public:
     btree();
     void setNewRoot(char *);
-    void btree_insert(entry_key_t, char*);
-    void btree_insert_internal(char *, entry_key_t, char *, uint32_t);
-    void btree_delete(entry_key_t);
+    void btree_insert(entry_key, char*);
+    void btree_insert_internal(char *, entry_key, char *, uint32_t);
+    void btree_delete(entry_key);
     void btree_delete_internal
-      (entry_key_t, char *, uint32_t, entry_key_t *, bool *, page **);
-    char *btree_search(entry_key_t);
-    void btree_search_range(entry_key_t, entry_key_t, unsigned long *); 
+      (entry_key, char *, uint32_t, entry_key *, bool *, page **);
+    char *btree_search(entry_key);
+    void btree_search_range(entry_key, entry_key, unsigned long *); 
     void printAll();
 
     friend class page;
@@ -130,11 +206,10 @@ class header{
 
 class entry{ 
   private:
-    entry_key_t key; // 8 bytes
+    entry_key key; // 8 bytes
     char* ptr; // 8 bytes
   public :
     entry(){
-      key = LONG_MAX;
       ptr = NULL;
     }
 
@@ -159,7 +234,7 @@ class page{
     }
 
     // this is called when tree grows
-    page(page* left, entry_key_t key, page* right, uint32_t level = 0) {
+    page(page* left, entry_key key, page* right, uint32_t level = 0) {
       hdr.leftmost_ptr = left;  
       hdr.level = level;
       records[0].key = key;
@@ -203,7 +278,7 @@ class page{
       return count;
     }
 
-    inline bool remove_key(entry_key_t key) {
+    inline bool remove_key(entry_key key) {
       // Set the switch_counter
       if(IS_FORWARD(hdr.switch_counter)) 
         ++hdr.switch_counter;
@@ -239,7 +314,7 @@ class page{
       return shift;
     }
 
-    bool remove(btree* bt, entry_key_t key, bool only_rebalance = false, bool with_lock = true) {
+    bool remove(btree* bt, entry_key key, bool only_rebalance = false, bool with_lock = true) {
       if(!only_rebalance) {
         register int num_entries_before = count();
 
@@ -274,7 +349,7 @@ class page{
       } 
 
       //Remove a key from the parent node
-      entry_key_t deleted_key_from_parent = 0;
+      entry_key deleted_key_from_parent = std::to_string(0);
       bool is_leftmost_node = false;
       page *left_sibling;
       bt->btree_delete_internal(key, (char *)this, hdr.level + 1,
@@ -294,7 +369,7 @@ class page{
       if(hdr.leftmost_ptr)
         ++total_num_entries;
 
-      entry_key_t parent_key;
+      entry_key parent_key;
 
       if(total_num_entries > cardinality - 1) { // Redistribution
         register int m = (int) ceil(total_num_entries / 2);
@@ -423,7 +498,7 @@ class page{
     }
 
     inline void 
-      insert_key(entry_key_t key, char* ptr, int *num_entries, bool flush = true,
+      insert_key(entry_key key, char* ptr, int *num_entries, bool flush = true,
           bool update_last_index = true) {
         // update switch_counter
         if(!IS_FORWARD(hdr.switch_counter))
@@ -433,7 +508,7 @@ class page{
         if(*num_entries == 0) {  // this page is empty
           entry* new_entry = (entry*) &records[0];
           entry* array_end = (entry*) &records[1];
-          new_entry->key = (entry_key_t) key;
+          new_entry->key = (entry_key) key;
           new_entry->ptr = (char*) ptr;
 
           array_end->ptr = (char*)NULL;
@@ -499,7 +574,7 @@ class page{
 
     // Insert a new key - FAST and FAIR
     page *store
-      (btree* bt, char* left, entry_key_t key, char* right,
+      (btree* bt, char* left, entry_key key, char* right,
        bool flush, page *invalid_sibling = NULL) {
         // If this node has a sibling node,
         if(hdr.sibling_ptr && (hdr.sibling_ptr != invalid_sibling)) {
@@ -522,7 +597,7 @@ class page{
           // create a new node
           page* sibling = new page(hdr.level); 
           register int m = (int) ceil(num_entries/2);
-          entry_key_t split_key = records[m].key;
+          entry_key split_key = records[m].key;
 
           // migrate half of keys into the sibling
           int sibling_cnt = 0;
@@ -586,7 +661,7 @@ class page{
 
     // Search keys with linear search
     void linear_search_range
-      (entry_key_t min, entry_key_t max, unsigned long *buf) {
+      (entry_key min, entry_key max, unsigned long *buf) {
         int i, off = 0;
         uint8_t previous_switch_counter;
         page *current = this;
@@ -597,7 +672,7 @@ class page{
             previous_switch_counter = current->hdr.switch_counter;
             off = old_off;
 
-            entry_key_t tmp_key;
+            entry_key tmp_key;
             char *tmp_ptr;
 
             if(IS_FORWARD(previous_switch_counter)) {
@@ -666,12 +741,12 @@ class page{
         }
       }
 
-    char *linear_search(entry_key_t key) {
+    char *linear_search(entry_key key) {
       int i = 1;
       uint8_t previous_switch_counter;
       char *ret = NULL;
       char *t; 
-      entry_key_t k;
+      entry_key k;
 
       if(hdr.leftmost_ptr == NULL) { // Search a leaf node
         do {
@@ -851,7 +926,7 @@ void btree::setNewRoot(char *new_root) {
   ++height;
 }
 
-char *btree::btree_search(entry_key_t key){
+char *btree::btree_search(entry_key key){
   page* p = (page*)root;
 
   while(p->hdr.leftmost_ptr != NULL) {
@@ -875,7 +950,7 @@ char *btree::btree_search(entry_key_t key){
 }
 
 // insert the key in the leaf node
-void btree::btree_insert(entry_key_t key, char* right){ //need to be string
+void btree::btree_insert(entry_key key, char* right){ //need to be string
   page* p = (page*)root;
 
   while(p->hdr.leftmost_ptr != NULL) {
@@ -889,7 +964,7 @@ void btree::btree_insert(entry_key_t key, char* right){ //need to be string
 
 // store the key into the node at the given level 
 void btree::btree_insert_internal
-(char *left, entry_key_t key, char *right, uint32_t level) {
+(char *left, entry_key key, char *right, uint32_t level) {
   if(level > ((page *)root)->hdr.level)
     return;
 
@@ -903,7 +978,7 @@ void btree::btree_insert_internal
   }
 }
 
-void btree::btree_delete(entry_key_t key) {
+void btree::btree_delete(entry_key key) {
   page* p = (page*)root;
 
   while(p->hdr.leftmost_ptr != NULL){
@@ -928,7 +1003,7 @@ void btree::btree_delete(entry_key_t key) {
 }
 
 void btree::btree_delete_internal
-(entry_key_t key, char *ptr, uint32_t level, entry_key_t *deleted_key, 
+(entry_key key, char *ptr, uint32_t level, entry_key *deleted_key, 
 bool *is_leftmost_node, page **left_sibling) {
   if(level > ((page *)this->root)->hdr.level)
     return;
@@ -970,7 +1045,7 @@ bool *is_leftmost_node, page **left_sibling) {
 
 // Function to search keys from "min" to "max"
 void btree::btree_search_range
-(entry_key_t min, entry_key_t max, unsigned long *buf) {
+(entry_key min, entry_key max, unsigned long *buf) {
   page *p = (page *)root;
 
   while(p) {
