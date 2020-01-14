@@ -34,7 +34,7 @@
 #define IS_FORWARD(c) (c % 2 == 0)
 
 #define KEYLEN 24
-//using entry_key_t = int64_t;
+using entry_key_t = int64_t;
 
 static inline void cpu_pause()
 {
@@ -105,11 +105,15 @@ class entry_key {
 
     }
 
-    entry_key& operator = (const entry_key& obj) {
-      int i;
-      for (i = 0; i < KEYLEN; i++)
-        key[i] = obj.key[i];
+    char* getkey() {
+      return key;
     }
+
+//    entry_key& operator = (const entry_key& obj) {
+//      int i;
+//      for (i = 0; i < KEYLEN; i++)
+//        key[i] = obj.key[i];
+//    }
     entry_key& operator = (const string& str) {
       int i;
       int len = str.length();
@@ -123,15 +127,17 @@ class entry_key {
 
     bool operator == (const entry_key& obj) {
       int i;
-      for (i = 0; i < KEYLEN; i++)
-        if (key[i] != obj.key[i])
+      for (i = 0; i < KEYLEN; i++) {
+        //printf("%c %c\n", key[i], obj.key[i]);
+        if (key[i] != obj.key[i]) 
           return false;
+      }
       return true;
     }
     bool operator < (const entry_key& obj) {
       int i;
       for (i = 0; i < KEYLEN; i++)
-        if (key[i] < obj.key[i])
+        if (this->key[i] < obj.key[i])
           return true;
       return false;
     }
@@ -186,7 +192,7 @@ class header{
     uint8_t switch_counter;     // 1 bytes
     uint8_t is_deleted;         // 1 bytes
     int16_t last_index;         // 2 bytes
-    char dummy[8];              // 8 bytes
+    char dummy[40];              // 40 bytes
 
     friend class page;
     friend class btree;
@@ -206,7 +212,7 @@ class header{
 
 class entry{ 
   private:
-    entry_key key; // 8 bytes
+    entry_key key; // 24 bytes
     char* ptr; // 8 bytes
   public :
     entry(){
@@ -748,6 +754,8 @@ class page{
       char *t; 
       entry_key k;
 
+      //printf("switch_count %u\n", previous_switch_counter);
+
       if(hdr.leftmost_ptr == NULL) { // Search a leaf node
         do {
           previous_switch_counter = hdr.switch_counter;
@@ -941,8 +949,9 @@ char *btree::btree_search(entry_key key){
     }
   }
 
-  if(!t || (char *)t != (char *)key) {
-    printf("NOT FOUND %lu, t = %x\n", key, t);
+// if(!t || (char *)t != (char *)key) {
+  if(!t) {
+    printf("NOT FOUND %24s, t = %p\n", key.getkey(), t);
     return NULL;
   }
 
@@ -998,7 +1007,7 @@ void btree::btree_delete(entry_key key) {
     }
   }
   else {
-    printf("not found the key to delete %lu\n", key);
+    printf("not found the key to delete %24s\n", key.getkey());
   }
 }
 
@@ -1065,7 +1074,7 @@ void btree::btree_search_range
 void btree::printAll(){
   int total_keys = 0;
   page *leftmost = (page *)root;
-  printf("root: %x\n", root);
+  printf("root: %p\n", root);
   if(root) {
     do {
       page *sibling = leftmost;

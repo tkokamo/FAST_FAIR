@@ -67,7 +67,8 @@ int main(int argc, char** argv)
     clock_gettime(CLOCK_MONOTONIC,&start);
 
     for(int i = 0; i < num_data; ++i) {
-      bt->btree_insert(keys[i], (char *)keys[i]); 
+      entry_key key = std::to_string(keys[i]);
+      bt->btree_insert(key, (char *)i+1); 
     }
 
     clock_gettime(CLOCK_MONOTONIC,&end);
@@ -86,7 +87,8 @@ int main(int argc, char** argv)
     clock_gettime(CLOCK_MONOTONIC,&start);
 
     for(int i = 0; i < num_data; ++i) {
-      bt->btree_search(keys[i]);
+      entry_key key = std::to_string(keys[i]);
+      printf("found key=%p\n", bt->btree_search(key));
     }
 
     clock_gettime(CLOCK_MONOTONIC,&end);
