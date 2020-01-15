@@ -78,8 +78,8 @@ int main(int argc, char** argv)
       (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
     elapsed_time /= 1000;
 
-    printf("INSERT elapsed_time: %ld, Avg: %f\n", elapsed_time,
-        (double)elapsed_time / num_data);
+    printf("INSERT elapsed_time(us): %ld, Avg: %f. ops(kops)=%f\n", elapsed_time,
+        (double)elapsed_time / num_data, ((double)1000000 * num_data) / ((double)elapsed_time * 1000));
   }
 
   clear_cache();
@@ -98,8 +98,8 @@ int main(int argc, char** argv)
       (end.tv_sec - start.tv_sec) * 1000000000 + (end.tv_nsec - start.tv_nsec);
     elapsed_time /= 1000;
 
-    printf("SEARCH elapsed_time: %ld, Avg: %f\n", elapsed_time,
-        (double)elapsed_time / num_data);
+    printf("SEARCH elapsed_time(us): %ld, Avg: %f. ops(kops)=%f\n", elapsed_time,
+        (double)elapsed_time / num_data, ((double)1000000 * num_data) / ((double)elapsed_time * 1000));
   }
 
   delete bt;
