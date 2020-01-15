@@ -24,7 +24,8 @@
 #include <future>
 #include <mutex>
 
-#define PAGESIZE 512
+//#define PAGESIZE 512 * 8
+#define PAGESIZE 256
 
 #define CPU_FREQ_MHZ (1994)
 #define DELAY_IN_NS (1000)
@@ -897,7 +898,7 @@ class page{
         printf("%x ",hdr.leftmost_ptr);
 
       for(int i=0;records[i].ptr != NULL;++i)
-        printf("%ld,%x ",records[i].key,records[i].ptr);
+        printf("[%d]%010s:%x ", i, records[i].key.getkey(), records[i].ptr);
 
       printf("%x ", hdr.sibling_ptr);
 
