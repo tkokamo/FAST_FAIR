@@ -24,8 +24,8 @@
 #include <future>
 #include <mutex>
 
-//#define PAGESIZE 512 * 8
-#define PAGESIZE 256
+#define PAGESIZE 512 * 8
+//#define PAGESIZE 256
 
 #define CPU_FREQ_MHZ (1994)
 #define DELAY_IN_NS (1000)
@@ -130,37 +130,100 @@ class entry_key {
       int i;
       for (i = 0; i < KEYLEN; i++) {
         //printf("%c %c\n", key[i], obj.key[i]);
-        if (key[i] != obj.key[i]) 
+        if (key[i] != obj.key[i]) {
+	//printf("%s != %s\n", key, obj.key);
           return false;
+	}
       }
       return true;
     }
     bool operator < (const entry_key& obj) {
       int i;
-      for (i = 0; i < KEYLEN; i++)
-        if (this->key[i] < obj.key[i])
+      int this_len, obj_len;
+      this_len = strlen(key);
+      obj_len = strlen(obj.key);
+      if (this_len < obj_len) {
+	  //printf("%s < %s\n", key, obj.key);
           return true;
+      } else if (this_len > obj_len) {
+	  //printf("%s > %s\n", key, obj.key);
+          return false;
+      }
+      for (i = 0; i < KEYLEN; i++) {
+        if (key[i] < obj.key[i]) {
+	  //printf("%s < %s\n", key, obj.key);
+	  //printf("[%d]: %d < %d\n", i, key[i], obj.key[i]);
+          return true;
+	}
+	else if (key[i] > obj.key[i]) {
+	  //printf("%s > %s\n", key, obj.key);
+	  return false;
+	}
+      }
+      //printf("%s == %s\n", key, obj.key);
       return false;
     }
     bool operator <= (const entry_key& obj) {
       int i;
-      for (i = 0; i < KEYLEN; i++)
-        if (key[i] > obj.key[i])
+      int this_len, obj_len;
+      this_len = strlen(key);
+      obj_len = strlen(obj.key);
+      if (this_len < obj_len) {
+          return true;
+      } else if (this_len > obj_len) {
           return false;
+      }
+      for (i = 0; i < KEYLEN; i++) {
+        if (key[i] < obj.key[i])
+          return true;
+	else if (key[i] > obj.key[i]) {
+	  return false;
+	}
+      }
       return true;
     }
     bool operator > (const entry_key& obj) {
       int i;
-      for (i = 0; i < KEYLEN; i++)
+      int this_len, obj_len;
+      this_len = strlen(key);
+      obj_len = strlen(obj.key);
+      if (this_len < obj_len) {
+	  //printf("%s < %s\n", key, obj.key);
+          return false;
+      } else if (this_len > obj_len) {
+	  //printf("%s > %s\n", key, obj.key);
+          return true;
+      }
+
+      for (i = 0; i < KEYLEN; i++) {
         if (key[i] > obj.key[i])
           return true;
+	else if (key[i] < obj.key[i]) {
+	  return false;
+	}
+      }
       return false;
     }
     bool operator >= (const entry_key& obj) {
       int i;
-      for (i = 0; i < KEYLEN; i++)
-        if (key[i] < obj.key[i])
+      int this_len, obj_len;
+      this_len = strlen(key);
+      obj_len = strlen(obj.key);
+      if (this_len < obj_len) {
+	  //printf("%s < %s\n", key, obj.key);
           return false;
+      } else if (this_len > obj_len) {
+	  //printf("%s > %s\n", key, obj.key);
+          return true;
+      }
+
+      for (i = 0; i < KEYLEN; i++) {
+        if (key[i] > obj.key[i])
+          return true;
+	else if (key[i] < obj.key[i]) {
+	  return false;
+	}
+      }
       return true;
     }
 };

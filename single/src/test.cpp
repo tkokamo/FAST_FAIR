@@ -69,7 +69,7 @@ int main(int argc, char** argv)
     for(int i = 0; i < num_data; ++i) {
       entry_key key = std::to_string(keys[i]);
       bt->btree_insert(key, (char *)i+1); 
-      bt->printAll(); 
+      //bt->printAll(); 
     }
 
     clock_gettime(CLOCK_MONOTONIC,&end);
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 
     for(int i = 0; i < num_data; ++i) {
       entry_key key = std::to_string(keys[i]);
-      printf("found key=%p\n", bt->btree_search(key));
+      //printf("found key=%p\n", bt->btree_search(key));
     }
 
     clock_gettime(CLOCK_MONOTONIC,&end);
