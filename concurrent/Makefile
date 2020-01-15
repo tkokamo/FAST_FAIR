@@ -11,7 +11,7 @@ all: main
 
 main: src/test.cpp
 	g++ $(CFLAGS) -o btree_concurrent src/test.cpp $(LIBS) -DCONCURRENT
-	g++ $(CFLAGS) -o btree_concurrent_mixed src/test.cpp $(LIBS) -DCONCURRENT -DMIXED
+#	g++ $(CFLAGS) -o btree_concurrent_mixed src/test.cpp $(LIBS) -DCONCURRENT -DMIXED
 
 clean: 
 	rm $(output)

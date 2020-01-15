@@ -18,6 +18,7 @@ int main(int argc, char** argv)
   int numData = 0;
   int n_threads = 1;
   char *input_path = (char *)std::string("../sample_input.txt").data();
+	entry_key key;
 
   int c;
   while((c = getopt(argc, argv, "n:w:t:i:")) != -1) {
@@ -70,7 +71,8 @@ int main(int argc, char** argv)
 
   // Warm-up! Insert half of input size
   for(int i=0;i<half_num_data;++i) {
-    bt->btree_insert(keys[i], (char*) keys[i]);
+		key = std::to_string(keys[i]);
+    bt->btree_insert(key, (char *)i + 1);
   }
   cout << "Warm-up!" << endl;
 
@@ -93,8 +95,10 @@ int main(int argc, char** argv)
     int to = (tid == n_threads - 1) ? half_num_data : from + data_per_thread;
 
     auto f = async(launch::async, [&bt, &keys](int from, int to){
+			entry_key key_s;
       for(int i = from; i < to; ++i) 
-        bt->btree_search(keys[i]);
+				key_s = std::to_string(keys[i]);
+        bt->btree_search(key_s);
       }, from, to);
     futures.push_back(move(f));
   }
@@ -104,7 +108,7 @@ int main(int argc, char** argv)
     
   clock_gettime(CLOCK_MONOTONIC,&end);
   elapsedTime = (end.tv_sec-start.tv_sec)*1000000000 + (end.tv_nsec-start.tv_nsec);
-  cout<<"Concurrent searching with " << n_threads << " threads (usec) : "<< elapsedTime / 1000 << endl; 
+  cout<<"Concurrent searching(total entries=" << half_num_data << ") with " << n_threads << " threads (usec) : "<< elapsedTime / 1000 << endl; 
   
   clear_cache();
   futures.clear();
@@ -117,8 +121,11 @@ int main(int argc, char** argv)
     int to = (tid == n_threads - 1) ? numData : from + data_per_thread;
 
     auto f = async(launch::async, [&bt, &keys](int from, int to){
-      for(int i = from; i < to; ++i)
-        bt->btree_insert(keys[i], (char*) keys[i]);
+			entry_key key_i;
+      for(int i = from; i < to; ++i) {
+        key_i = std::to_string(keys[i]);
+        bt->btree_insert(key_i, (char*) i + i);
+	}
       }, from, to);
     futures.push_back(move(f));
   }
@@ -128,7 +135,7 @@ int main(int argc, char** argv)
     
   clock_gettime(CLOCK_MONOTONIC,&end);
   elapsedTime = (end.tv_sec-start.tv_sec)*1000000000 + (end.tv_nsec-start.tv_nsec);
-  cout<<"Concurrent inserting with " << n_threads << " threads (usec) : "<< elapsedTime / 1000 << endl; 
+  cout<<"Concurrent inserting(total entries=" << half_num_data << ") with " << n_threads << " threads (usec) : "<< elapsedTime / 1000 << endl; 
 #else
   clock_gettime(CLOCK_MONOTONIC,&start);
 
